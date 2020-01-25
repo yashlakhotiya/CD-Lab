@@ -1,7 +1,6 @@
-//DISCARD PREPROCESSOR DIRECTIVES FROM A GIVEN INPUT 'C' FILE AND WRITES TO AN OUTPUT FILE
+//REPLACES BLANK SPACES AND TABS BY A SINGLE BLANK SPACE
 
-#include <stdio.h>
-#include <stdlib.h>
+
 int main(){
 	FILE *fa,*fb;
 
@@ -12,7 +11,7 @@ int main(){
 		printf("error opening file\n");
 		exit(0);
 	}
-	fb = fopen("lab2_out.c","w");
+	fb = fopen("lab1_out.c","w");
 	if(fb == NULL){
 		printf("error opening file\n");
 		exit(0);
@@ -20,13 +19,18 @@ int main(){
 
 	c = getc(fa);
 	while(c != EOF){
-		if(c == '#'){
-			while(c != '\n'){
-				c = getc(fa);
-			}
+		if(!(c == ' ' || c == '\t' || c == '\n')){
+			putc(c,fb);
 		}
 		else{
-			putc(c,fb);
+			d = getc(fa);
+			while(d == ' ' || d == '\t' || d == '\n'){
+				d = getc(fa);
+			}
+			if(d != EOF){
+				putc(SPACE,fb);
+				putc(d,fb);
+			}
 		}
 		c = getc(fa);
 	}

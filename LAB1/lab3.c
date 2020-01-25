@@ -43,7 +43,7 @@ const char *keywords[] = {
 // 	}
 // }
 
-void FindKeyword(char line[512], int line_no){
+void FindKeyword(char line[512], int line_no,FILE *fb){
 	int col_no = 0;
 	char *result = line;
 	char *init = &line[0];
@@ -51,6 +51,7 @@ void FindKeyword(char line[512], int line_no){
 		if(result){
 			while(result = strstr(result, keywords[i])){
 				col_no = result - init;
+				fprintf(fb,"(row: %d, col: %d) %s\n",line_no,col_no,keywords[i]);
 				printf("(row: %d, col: %d) %s\n",line_no,col_no,keywords[i]);
 				result += strlen(keywords[i]);
 			}
@@ -70,10 +71,15 @@ int main(){
 		printf("error opening file\n");
 		exit(0);
 	}
+	fb = fopen("lab3_out.c","w");
+	if(fb == NULL){
+		printf("error opening file\n");
+		exit(0);
+	}
 	int line_no=1;
 
 	while(fgets(line,512,fa) != NULL){
-		FindKeyword(line,line_no);
+		FindKeyword(line,line_no,fb);
 		line_no++;
 	}
 
