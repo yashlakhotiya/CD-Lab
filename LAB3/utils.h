@@ -150,7 +150,7 @@ void printToken(TOKEN temp){
 	}
 }
 
-TOKEN getNextTokenWithWhitespace(FILE *fa, int *row_no, int *col_no){
+TOKEN getNextTokenWithExtraStuff(FILE *fa, int *row_no, int *col_no){
 	TOKEN temp = (TOKEN)malloc(sizeof(struct token));
 	//printf("fn row col %d %d\n",*row_no,*col_no);
 	char lexeme[100];
@@ -444,23 +444,23 @@ TOKEN getNextTokenWithWhitespace(FILE *fa, int *row_no, int *col_no){
 
 TOKEN getNextToken(FILE *fa,int *row_no, int *col_no){
 	TOKEN temp = NULL;
-	temp = getNextTokenWithWhitespace(fa,row_no,col_no);
+	temp = getNextTokenWithExtraStuff(fa,row_no,col_no);
 	while(temp->type == whitespace || temp->type == comments /*|| temp->type == numerical_constant */|| temp->type == string_literal || temp->type == preprocessor_directive){
-		temp = getNextTokenWithWhitespace(fa,row_no,col_no);
+		temp = getNextTokenWithExtraStuff(fa,row_no,col_no);
 	}
 	return temp;
 }
 
 void createOutputFile(FILE *fa, FILE *fb, TABLE symbol_table[], int *last_table_index){
 	int row_no = 1, col_no = -1;
-	TOKEN temp = getNextTokenWithWhitespace(fa,&row_no,&col_no);
+	TOKEN temp = getNextTokenWithExtraStuff(fa,&row_no,&col_no);
 	while(temp->type != end_of_file){
 		//printf("inside createoutputfile\n");
 		if(strcmp(temp->lexeme,"\n") == 0){
 			fprintf(fb,"%s",temp->lexeme);
 		}
 		if(temp->type == comments || temp->type == preprocessor_directive || temp->type == whitespace){
-			temp = getNextTokenWithWhitespace(fa,&row_no,&col_no);
+			temp = getNextTokenWithExtraStuff(fa,&row_no,&col_no);
 			continue;
 		}
 		else if(temp->type == identifier){
@@ -485,6 +485,6 @@ void createOutputFile(FILE *fa, FILE *fb, TABLE symbol_table[], int *last_table_
 		else{
 			fprintf(fb, " < %s > ",temp->lexeme);
 		}
-		temp = getNextTokenWithWhitespace(fa,&row_no,&col_no);
+		temp = getNextTokenWithExtraStuff(fa,&row_no,&col_no);
 	}
 }
