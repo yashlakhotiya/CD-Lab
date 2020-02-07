@@ -167,7 +167,7 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 								}
 							}
 						}
-						else if(strcmp(temp->lexeme,"[") == 0){ //array declaration but cannot declare mixture of array and primitives
+						else if(strcmp(temp->lexeme,"[") == 0){ //array declaration but with assumption that we cannot declare mixture of array and primitives
 							while(strcmp(temp->lexeme,";") != 0){
 								TABLE temp_entry = (TABLE)malloc(sizeof(struct table_entry));
 								strcpy(temp_entry->type,prev_prev_lexeme);
@@ -175,17 +175,50 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 								temp_entry->index = index_of_identifier++;
 								temp_entry->scope = scope;
 								temp = getNextToken(fa,row_no,col_no); //extracting 'n' size of array in arr[n] and convert using atoi
-								temp_entry->size = findSizeOfDataType(prev_prev_lexeme) * atoi(temp->lexeme);
-								temp = getNextToken(fa,row_no,col_no);//extracting ]
-								printf("extracting %s\n",temp->lexeme);
-								temp = getNextToken(fa,row_no,col_no);//extracting , or ;
-								printf("extracting %s\n",temp->lexeme);
-								insert(symbol_table,last_table_index,temp_entry);
-								if(strcmp(temp->lexeme,";") != 0){
-									temp = getNextToken(fa,row_no,col_no);
-									strcpy(prev_lexeme,temp->lexeme);
+								if(strcmp(temp->lexeme,"]") != 0){ //check if size is specified in array declaration i.e. arr[n] or arr[]
+									temp_entry->size = findSizeOfDataType(prev_prev_lexeme) * atoi(temp->lexeme);
+									temp = getNextToken(fa,row_no,col_no);//extracting ]
 								}
-								temp = getNextToken(fa,row_no,col_no); //extracting [ ass loop should start with pointer pointing to [
+								else{
+									temp_entry->size = 0;
+								}
+								insert(symbol_table,last_table_index,temp_entry);
+								printf("extracting %s\n",temp->lexeme);
+								temp = getNextToken(fa,row_no,col_no);//extracting , or ; or =
+								printf("extracting %s\n",temp->lexeme);
+
+								if(strcmp(temp->lexeme,",") == 0){
+									temp = getNextToken(fa,row_no,col_no);//extract identifier
+									strcpy(prev_lexeme,temp->lexeme);
+									temp = getNextToken(fa,row_no,col_no); //extract [
+								}
+								else if(strcmp(temp->lexeme,";") == 0){
+									temp = getNextToken(fa,row_no,col_no);
+									break;
+								}
+								else if(strcmp(temp->lexeme,"=") == 0){
+									temp = getNextToken(fa,row_no,col_no);//extract { or "
+									if(strcmp(temp->lexeme,"{") == 0){
+										while(strcmp(temp->lexeme,"}") != 0){
+											temp = getNextToken(fa,row_no,col_no);
+										}
+									}
+									else if(strcmp(temp->lexeme,"\"") == 0){
+										while(strcmp(temp->lexeme,"\"") != 0){
+											temp = getNextToken(fa,row_no,col_no);
+										}
+									}
+									temp = getNextToken(fa,row_no,col_no);//extract , or ;
+									if(strcmp(temp->lexeme,",") == 0){
+										temp = getNextToken(fa,row_no,col_no);//extract identifier
+										strcpy(prev_lexeme,temp->lexeme);
+										temp = getNextToken(fa,row_no,col_no); //extract [
+									}
+									else if(strcmp(temp->lexeme,";") == 0){
+										temp = getNextToken(fa,row_no,col_no);
+										break;
+									}
+								}
 							}
 						}
 						else if(strcmp(temp->lexeme,";") == 0){ //single variable declaration of type " int a; "
@@ -225,9 +258,6 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 					}
 				}
 		}
-		//else if(temp->type == identifier){
-
-		//} //function call
 		else{
 			temp = getNextToken(fa,row_no,col_no);
 			continue;

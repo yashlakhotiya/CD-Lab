@@ -7,7 +7,8 @@
 void main(int a, char c)
 {
     int number, sum = 0, rem = 0, cube = 0, temp;
-    int arr[10], pqr[2];
+    int arr[10], pqr[2] , mn[], gf[90] = {1,2,3,4};
+    char arq[100] = "pqrs";
  
     printf("enter a number");
     scanf("%d", &number);
