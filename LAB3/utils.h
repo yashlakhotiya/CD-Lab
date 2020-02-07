@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <string.h>
+#define TABLELENGTH 30
+#define NO_OF_KEYWORDS 32
 
 const char *keywords[] = {
 "auto", 
@@ -36,7 +39,39 @@ const char *keywords[] = {
 "while", 
 "volatile", 
 "unsigned"
-};//size=32
+};
+
+const int datatype_size[]={
+	4,
+	8,
+	8,
+	2,
+	4,
+	1,
+	0
+};
+
+const char datatype_name[10][50]={
+		"int",
+		"double",
+		"long",
+		"short",
+		"float",
+		"char",
+		"void"
+};
+
+typedef struct table_entry{
+	int index ;
+	char name[100];
+	char type[20];
+	int size ;
+	char scope ;
+	int number_of_arguments ;
+	char arguments[100][100];
+	char return_type[50];
+	int argument;
+}*TABLE;
 
 const char types[][30]={
 "Arithmetic_Operator",
@@ -76,12 +111,31 @@ typedef struct token{
 	int row_no;
 	int col_no;
 	int type;
+	enum tokenType index;
 	char lexeme[100];
 }*TOKEN;
 
+int search(TABLE symbol_table[], int *last_table_index, char lexeme[]){
+	for(int i=0; i < *last_table_index; i++){
+		if(strcmp(symbol_table[i]->name,lexeme) == 0){
+			return i;
+		}
+	}
+	return -1;
+}
+
+int findSizeOfDataType(char datatype[100]){
+	for(int i=0; i<7; i++){
+		if(strcmp(datatype,datatype_name[i]) == 0){
+			return datatype_size[i];
+		}
+	}
+	return -1;
+}
+
 int isKeyword(char lexeme[]){
 	int isK = 0;
-	for(int i=0; i<32; i++){
+	for(int i=0; i<NO_OF_KEYWORDS; i++){
 		if(strcmp(keywords[i],lexeme) == 0){
 			isK = 1;
 			break;
@@ -96,7 +150,7 @@ void printToken(TOKEN temp){
 	}
 }
 
-TOKEN getNextToken(FILE *fa, int *row_no, int *col_no){
+TOKEN getNextTokenWithWhitespace(FILE *fa, int *row_no, int *col_no){
 	TOKEN temp = (TOKEN)malloc(sizeof(struct token));
 	//printf("fn row col %d %d\n",*row_no,*col_no);
 	char lexeme[100];
@@ -112,15 +166,12 @@ TOKEN getNextToken(FILE *fa, int *row_no, int *col_no){
 		return temp;
 	}
 
-	/* if(c == '\r'){
-		printf("\\r row col %d %d\n",*row_no,*col_no);
-		*col_no = -1;
-		temp->type = whitespace;
-		return temp;
-	} */
-
 	if(c == '\n'){
 		//printf("newline row col %d %d\n",*row_no,*col_no);
+		int i = 0;
+		lexeme[i++] = c;
+		lexeme[i] = '\0';
+		strcpy(temp->lexeme,lexeme);
 		(*row_no)++;
 		*col_no = -1;
 		temp->type = whitespace;
@@ -335,7 +386,6 @@ TOKEN getNextToken(FILE *fa, int *row_no, int *col_no){
 	}
 
 	if(c == '|'){
-		temp->type = logical_operator;
 		int i=0;
 		lexeme[i++] = c;
 		lexeme[i] = '\0';
@@ -346,18 +396,19 @@ TOKEN getNextToken(FILE *fa, int *row_no, int *col_no){
 		if(c == '|'){
 			lexeme[i++] = c;
 			lexeme[i] = '\0';
+			temp->type = logical_operator;
 			
 		}
 		else{
+			temp->type = special_symbol;
 			(*col_no)--;
 			fseek(fa,-1,SEEK_CUR);
 		}
-		strcpy(temp->lexeme,lexeme);
+		strcmp(temp->lexeme,lexeme);
 		return temp;
 	}
 
 	if(c == '&'){
-		temp->type = logical_operator;
 		int i=0;
 		lexeme[i++] = c;
 		lexeme[i] = '\0';
@@ -368,12 +419,15 @@ TOKEN getNextToken(FILE *fa, int *row_no, int *col_no){
 		if(c == '&'){
 			lexeme[i++] = c;
 			lexeme[i] = '\0';
+			temp->type = logical_operator;
+			
 		}
 		else{
+			temp->type = special_symbol;
 			(*col_no)--;
 			fseek(fa,-1,SEEK_CUR);
 		}
-		strcpy(temp->lexeme,lexeme);
+		strcmp(temp->lexeme,lexeme);
 		return temp;
 	}
 
@@ -388,28 +442,49 @@ TOKEN getNextToken(FILE *fa, int *row_no, int *col_no){
 		return temp;
 }
 
-int main(){
-	// for(int i=0; i<14; i++){
-	// 	printf("%d %s\n",i,types[i]);
-	// }
-
-	FILE *fa = fopen("lab1.c","r");
-
-	int row_no = 1;
-	int col_no = -1;
-
-	if(fa == NULL){
-		printf("error opening file\n");
-		exit(0);
-	}
-
+TOKEN getNextToken(FILE *fa,int *row_no, int *col_no){
 	TOKEN temp = NULL;
-	printf("<row_no,col_no>\t\t\ttype\t\t\tlexeme\n");
-	int k = 0;
-	do{
-		//printf("k: %d\n",++k);
-		temp = getNextToken(fa,&row_no,&col_no);
-		//printf("type: %d\n",temp->type);
-		printToken(temp);
-	}while(temp->type != end_of_file);
+	temp = getNextTokenWithWhitespace(fa,row_no,col_no);
+	while(temp->type == whitespace || temp->type == comments /*|| temp->type == numerical_constant */|| temp->type == string_literal || temp->type == preprocessor_directive){
+		temp = getNextTokenWithWhitespace(fa,row_no,col_no);
+	}
+	return temp;
+}
+
+void createOutputFile(FILE *fa, FILE *fb, TABLE symbol_table[], int *last_table_index){
+	int row_no = 1, col_no = -1;
+	TOKEN temp = getNextTokenWithWhitespace(fa,&row_no,&col_no);
+	while(temp->type != end_of_file){
+		//printf("inside createoutputfile\n");
+		if(strcmp(temp->lexeme,"\n") == 0){
+			fprintf(fb,"%s",temp->lexeme);
+		}
+		if(temp->type == comments || temp->type == preprocessor_directive || temp->type == whitespace){
+			temp = getNextTokenWithWhitespace(fa,&row_no,&col_no);
+			continue;
+		}
+		else if(temp->type == identifier){
+				char id_buf[10] = "id,";
+				int i = 3;
+				int index = search(symbol_table,last_table_index,temp->lexeme);
+				if(index != -1){
+					fprintf(fb, " < %s%d > ",id_buf,index);
+				}
+				else{
+					fprintf(fb, " < FUNC > ");
+				}
+		}
+		else if(temp->type == numerical_constant){
+				char id_buf[10] = "num,";
+				fprintf(fb, " < %s%s > ",id_buf,temp->lexeme);
+		}
+		else if(temp->type == string_literal){
+				char id_buf[10] = "STR";
+				fprintf(fb, " < %s > ",id_buf);
+		}
+		else{
+			fprintf(fb, " < %s > ",temp->lexeme);
+		}
+		temp = getNextTokenWithWhitespace(fa,&row_no,&col_no);
+	}
 }
