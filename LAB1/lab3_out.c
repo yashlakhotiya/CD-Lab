@@ -47,10 +47,9 @@
 (row: 49, col: 1) char
 (row: 50, col: 1) for
 (row: 50, col: 5) int
-(row: 51, col: 2) if
-(row: 52, col: 3) while
-(row: 54, col: 7) int
-(row: 55, col: 6) int
+(row: 52, col: 2) if
+(row: 53, col: 3) while
+(row: 55, col: 7) int
 (row: 63, col: 0) int
 (row: 64, col: 1) char
 (row: 67, col: 1) char

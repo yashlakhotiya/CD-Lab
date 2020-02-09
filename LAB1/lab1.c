@@ -27,7 +27,7 @@ int main(){
 		}
 		else{
 			d = getc(fa);
-			while(d == ' ' || d == '\t' || d == '\n'){
+			while(d == ' ' || d == '\t' || c == '\n'){
 				d = getc(fa);
 			}
 			if(d != EOF){

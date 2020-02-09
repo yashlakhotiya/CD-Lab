@@ -3,9 +3,14 @@
  */
 #include <stdio.h>
 #include <math.h>
+int abcd(char xyz, int hdj){
+    int mcso;
+    int acdf[];
+    int pedj[10], adkn[20] = {1,3,4,2};
+    char fed[12] = "sdkf ";
+}
  
-void main(int a, char c)
-{
+void main(int a, char c){
     int number, sum = 0, rem = 0, cube = 0, temp;
     int arr[10], pqr[2] , mn[], gf[90] = {1,2,3,4};
     char arq[100] = "pqrs";
@@ -20,8 +25,10 @@ void main(int a, char c)
         sum = sum + cube;
         number = number / 10;
     }
-    if (sum == temp)
+    if (sum == temp){
         printf ("The given no is armstrong no");
-    else
-        printf ("The given no is not a armstrong no");
+    }
+    else{
+            printf ("The given no is not a armstrong no");
+    }
 }

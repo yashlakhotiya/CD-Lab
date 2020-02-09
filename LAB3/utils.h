@@ -69,6 +69,7 @@ typedef struct table_entry{
 	char scope ;
 	int number_of_arguments ;
 	char arguments[100][100];
+	char converted_arguments[200];
 	char return_type[50];
 	int argument;
 }*TABLE;
@@ -118,7 +119,7 @@ typedef struct token{
 int search(TABLE symbol_table[], int *last_table_index, char lexeme[]){
 	for(int i=0; i < *last_table_index; i++){
 		if(strcmp(symbol_table[i]->name,lexeme) == 0){
-			return i;
+			return i+1;
 		}
 	}
 	return -1;
@@ -445,7 +446,7 @@ TOKEN getNextTokenWithExtraStuff(FILE *fa, int *row_no, int *col_no){
 TOKEN getNextToken(FILE *fa,int *row_no, int *col_no){
 	TOKEN temp = NULL;
 	temp = getNextTokenWithExtraStuff(fa,row_no,col_no);
-	while(temp->type == whitespace || temp->type == comments /*|| temp->type == numerical_constant */|| temp->type == string_literal || temp->type == preprocessor_directive){
+	while(temp->type == whitespace || temp->type == comments /*|| temp->type == numerical_constant || temp->type == string_literal */|| temp->type == preprocessor_directive){
 		temp = getNextTokenWithExtraStuff(fa,row_no,col_no);
 	}
 	return temp;

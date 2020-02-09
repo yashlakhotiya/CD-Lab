@@ -48,11 +48,11 @@ void FindKeyword(char line[512], int line_no,FILE *fb){
 	char *result = line;
 	char *init = &line[0];
 	for(int i=0; i<32; i++){
+		result = line;
 		if(result){
 			while(result = strstr(result, keywords[i])){
 				col_no = result - init;
 				fprintf(fb,"(row: %d, col: %d) %s\n",line_no,col_no,keywords[i]);
-				printf("(row: %d, col: %d) %s\n",line_no,col_no,keywords[i]);
 				result += strlen(keywords[i]);
 			}
 		}

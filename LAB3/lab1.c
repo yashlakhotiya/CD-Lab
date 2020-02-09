@@ -12,57 +12,76 @@ int insert(TABLE symbol_table[], int *last_table_index,TABLE entry){
 }
 
 void displaySymbolTable(TABLE symbol_table[], int *last_table_index){
-	printf("ind\t|\tname\t|\ttype\t|\tsize\t|\tscope\t|\tn\t|\treturn type\n");
+	printf("ind\t|\tname\t|\ttype\t|\tsize\t|\tscope\t|\tn\t|\targument\t|\treturn type\n");
 	for(int i=0; i<*last_table_index; i++){
-		printf("%d\t|\t%s\t|\t%s\t|\t%d\t|\t%c\t|\t%d\t|\t%s\n",symbol_table[i]->index,symbol_table[i]->name,symbol_table[i]->type,symbol_table[i]->size,symbol_table[i]->scope,symbol_table[i]->number_of_arguments,symbol_table[i]->return_type);
+		printf("%d\t|\t%s\t|\t%s\t|\t%d\t|\t%c\t|\t%d\t|\t%s\t|\t%s\n",symbol_table[i]->index,symbol_table[i]->name,symbol_table[i]->type,symbol_table[i]->size,symbol_table[i]->scope,symbol_table[i]->number_of_arguments,symbol_table[i]->converted_arguments,symbol_table[i]->return_type);
 	}
 }
+
+void convertArgumentsOfSymbolTableToIDs(TABLE symbol_table[], int *last_table_index){
+	char arr[200];
+	for(int i=0; i<*last_table_index; i++){
+		int k=0;
+		if(strcmp(symbol_table[i]->type,"FUNC") == 0 && symbol_table[i]->number_of_arguments != 0){
+			for(int j=0; j<symbol_table[i]->number_of_arguments; j++){
+				int id = search(symbol_table,last_table_index,symbol_table[i]->arguments[j]);
+				arr[k++] = 'i';
+				arr[k++] = 'd';
+				int p=0;
+				char num[100];
+				while(id != 0){
+					num[p++] = (id%10)+'0';
+					id /= 10;
+				}
+				for(int i=p-1; i>=0; i--){
+					arr[k++] = num[i];
+				}
+				arr[k++] = ',';
+				arr[k++] = ' ';
+			}
+			k--;//leave one extra space
+			k--;//leave one extra comma
+			arr[k] = '\0';
+			strcpy(symbol_table[i]->converted_arguments,arr);
+		}
+		else{
+			strcpy(arr,"NIL\t");
+			strcpy(symbol_table[i]->converted_arguments,arr);
+		}
+	}
+}
+
 TOKEN temp = NULL;
 int index_of_identifier = 1;
 
 void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, int *col_no, int *last_table_index, int *number_of_arguments, char arguments[100][100]){
-	printf("in fn\n");
 	char prev_prev_lexeme[100],prev_lexeme[100], curr_lexeme[100];
-
 	temp = getNextToken(fa,row_no,col_no);
 
-	printf("%s\n",temp->lexeme);
-	if(/*strcmp(temp->lexeme,"}") == 0 || */temp->type == end_of_file){
-		printf("{}\n");
-		return;
-	}
-	if(strcmp(temp->lexeme,"{") == 0){
-		printf("in {\n");
-		createSymbolTable(fa,symbol_table,'L',row_no,col_no,last_table_index,0,arguments);
-	}
 	while(temp->type != end_of_file){
-		printf("in loop\n");
-		printf("%s\n",temp->lexeme);
-
 		if(temp->type == numerical_constant || temp->type == string_literal){
 			temp = getNextToken(fa,row_no,col_no);
 			continue;
 		}
 		if(strcmp(temp->lexeme,"{") == 0){
-			printf("in {\n");
+			//printf("in {\n");
 			createSymbolTable(fa,symbol_table,'L',row_no,col_no,last_table_index,0,arguments);
 		}
 		if(strcmp(temp->lexeme,"}") == 0 || temp->type == end_of_file){
-			printf("{}\n");
+			//printf("end of function %s %s\n",prev_prev_lexeme,prev_lexeme);
+			//temp = getNextToken(fa,row_no,col_no);
 			return;
 		}
 		if(scope == '\0'){ //if it is inside function parameter
 			printf("in function parameters\n");
 
 			strcpy(prev_lexeme,temp->lexeme);
-			printf("prev: %s\n",prev_lexeme);
+			//printf("prev: %s\n",prev_lexeme);
 
 			if(strcmp(temp->lexeme,")") != 0){//means function has parameters
 				temp = getNextToken(fa,row_no,col_no);
 				strcpy(curr_lexeme,temp->lexeme);
 			}
-
-			printf("curr: %s\n",curr_lexeme);
 
 			while(strcmp(temp->lexeme,")") != 0){
 				
@@ -71,8 +90,8 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 				strcpy(temp_entry->type,prev_lexeme);
 				strcpy(temp_entry->name,curr_lexeme);
 				temp_entry->size = findSizeOfDataType(prev_lexeme);
-				printf("type: %s\n",prev_lexeme);
-				printf("name: %s\n",curr_lexeme);
+				//printf("type: %s\n",prev_lexeme);
+				//printf("name: %s\n",curr_lexeme);
 
 
 				temp_entry->scope = scope;
@@ -84,31 +103,25 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 				(*number_of_arguments)++;
 
 				temp = getNextToken(fa,row_no,col_no);
-				while((strcmp(temp->lexeme,",") == 0)){
-					temp = getNextToken(fa,row_no,col_no);
-				}
-				strcpy(prev_lexeme,temp->lexeme);
-
-				if(strcmp(temp->lexeme,")") != 0){
-					temp = getNextToken(fa,row_no,col_no);
-					while((strcmp(temp->lexeme,",") == 0)){
-						temp = getNextToken(fa,row_no,col_no);
-					}
+				if((strcmp(temp->lexeme,",") == 0)){
+					temp = getNextToken(fa,row_no,col_no);//extract datatype
+					strcpy(prev_lexeme,temp->lexeme);
+					temp = getNextToken(fa,row_no,col_no);//extract variable name
 					strcpy(curr_lexeme,temp->lexeme);
 				}
+				else if((strcmp(temp->lexeme,")") == 0)){
+					continue;
+				}
 			}
-			temp = getNextToken(fa,row_no,col_no);
-			while((strcmp(temp->lexeme,",") == 0)){
-				temp = getNextToken(fa,row_no,col_no);
-			}
+			printf("end of function parameters\n");
 			return;
 		}
 		else if(temp->type == keyword){
-				printf("in kw\n");
-				strcpy(prev_prev_lexeme,temp->lexeme);
+				//printf("in kw\n");
+				strcpy(prev_prev_lexeme,temp->lexeme);//storing the type in prev_prev_lexeme
 				
 				temp = getNextToken(fa,row_no,col_no);
-				strcpy(prev_lexeme,temp->lexeme);
+				strcpy(prev_lexeme,temp->lexeme);//storing the identifier in prev_lexeme
 
 				if(temp->type == special_symbol){//if loop or while loop or do loop i.e. keyword followed by a special symbol
 					if(strcmp(temp->lexeme,"(") == 0){
@@ -130,7 +143,7 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 					}
 				}
 				else if(temp->type == identifier){ //declaration ; function or variable
-					printf("in identifier\n");
+					//printf("in identifier\n");
 					temp = getNextToken(fa,row_no,col_no);
 					strcpy(curr_lexeme,temp->lexeme);
 
@@ -183,9 +196,9 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 									temp_entry->size = 0;
 								}
 								insert(symbol_table,last_table_index,temp_entry);
-								printf("extracting %s\n",temp->lexeme);
+								//printf("extracting %s\n",temp->lexeme);
 								temp = getNextToken(fa,row_no,col_no);//extracting , or ; or =
-								printf("extracting %s\n",temp->lexeme);
+								//printf("extracting %s\n",temp->lexeme);
 
 								if(strcmp(temp->lexeme,",") == 0){
 									temp = getNextToken(fa,row_no,col_no);//extract identifier
@@ -197,16 +210,16 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 									break;
 								}
 								else if(strcmp(temp->lexeme,"=") == 0){
-									temp = getNextToken(fa,row_no,col_no);//extract { or "
+									printf("in = %s\n",prev_lexeme);
+
+									temp = getNextToken(fa,row_no,col_no);//extract { or a string_literal token
 									if(strcmp(temp->lexeme,"{") == 0){
 										while(strcmp(temp->lexeme,"}") != 0){
 											temp = getNextToken(fa,row_no,col_no);
 										}
 									}
-									else if(strcmp(temp->lexeme,"\"") == 0){
-										while(strcmp(temp->lexeme,"\"") != 0){
-											temp = getNextToken(fa,row_no,col_no);
-										}
+									else if(temp->type == string_literal){
+										printf("string literal\n");
 									}
 									temp = getNextToken(fa,row_no,col_no);//extract , or ;
 									if(strcmp(temp->lexeme,",") == 0){
@@ -222,7 +235,7 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 							}
 						}
 						else if(strcmp(temp->lexeme,";") == 0){ //single variable declaration of type " int a; "
-							printf("one var dec\n");
+							//printf("one var dec\n");
 							TABLE temp_entry = (TABLE)malloc(sizeof(struct table_entry));
 							strcpy(temp_entry->type,prev_prev_lexeme);
 							temp_entry->size = findSizeOfDataType(prev_prev_lexeme);
@@ -234,7 +247,7 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 						}
 						else if(strcmp(temp->lexeme,"(") == 0){//inside function params, scope = '\0'
 							//function declaration
-							printf("in function\n");
+							printf("in function () %s %s\n",prev_prev_lexeme,prev_lexeme);
 							TABLE temp_entry = (TABLE)malloc(sizeof(struct table_entry));
 							int func_index_in_table = *last_table_index;
 							int number_of_arguments = 0;
@@ -242,18 +255,23 @@ void createSymbolTable(FILE *fa, TABLE symbol_table[], char scope, int *row_no, 
 							strcpy(temp_entry->name,prev_lexeme);
 							strcpy(temp_entry->type,"FUNC");
 							temp_entry->scope = scope;
-							printf("in function before insert\n");
 							temp_entry->index = index_of_identifier++;
 							insert(symbol_table,last_table_index,temp_entry);
-							printf("in function after insert\n");
-
 							createSymbolTable(fa,symbol_table,'\0',row_no,col_no,last_table_index,&number_of_arguments,arguments);
 							
-							printf("number_of_arguments: %d\n",number_of_arguments);
+							temp = getNextToken(fa,row_no,col_no);
+							if(strcmp(temp->lexeme,"{") == 0){
+								printf("in function body %s %s\n",prev_prev_lexeme,prev_lexeme);
+								createSymbolTable(fa,symbol_table,'L',row_no,col_no,last_table_index,0,arguments);
+								printf("end of function %s %s\n",prev_prev_lexeme,prev_lexeme);
+							}
 							symbol_table[func_index_in_table]->number_of_arguments = number_of_arguments;
 							for(int i=0; i<number_of_arguments ; i++){
 								strcpy(symbol_table[func_index_in_table]->arguments[i],arguments[i]);
 							}
+							temp = getNextToken(fa,row_no,col_no);
+							printf("next token extracted is %s\n",temp->lexeme);
+							continue;
 						}
 					}
 				}
@@ -284,6 +302,8 @@ int main(){
 	char arguments[100][100];
 
 	createSymbolTable(fa,symbol_table,'G',&row_no,&col_no,&last_table_index,0,arguments);
+
+	convertArgumentsOfSymbolTableToIDs(symbol_table,&last_table_index);
 
 	displaySymbolTable(symbol_table,&last_table_index);
 	fclose(fa);
