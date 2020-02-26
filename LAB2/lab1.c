@@ -193,6 +193,7 @@ TOKEN getNextToken(FILE *fa, int *row_no, int *col_no){
 			temp->type = arithmetic_operator;
 			return temp;
 		}
+	}
 
 	if(c == '"'){
 		int i=0;
