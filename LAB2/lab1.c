@@ -150,6 +150,9 @@ TOKEN getNextToken(FILE *fa, int *row_no, int *col_no){
 	if(c == '/'){
 		//printf("in comment\n");
 		//printf("%c",c);
+		int i=0;
+		temp->lexeme[i++] = c;
+
 		c = getc(fa);
 		(*col_no)++;
 		if(c == '/'){
@@ -184,7 +187,12 @@ TOKEN getNextToken(FILE *fa, int *row_no, int *col_no){
 				}
 			}
 		}
-	}
+		else{
+			fseek(fa,-1,SEEK_CUR);
+			temp->lexeme[i] = '\0';
+			temp->type = arithmetic_operator;
+			return temp;
+		}
 
 	if(c == '"'){
 		int i=0;
